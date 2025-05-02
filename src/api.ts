@@ -1,13 +1,7 @@
-import dotenv from 'dotenv';
+import env from "./env.js";
 
-dotenv.config();
-
-const CONFLUENCE_HOSTNAME = process.env.CONFLUENCE_HOSTNAME;
-const CONFLUENCE_TOKEN = process.env.CONFLUENCE_TOKEN;
-
-if (!CONFLUENCE_HOSTNAME || !CONFLUENCE_TOKEN) {
-    throw new Error("Missing Confluence hostname or token in environment variables");
-}
+const CONFLUENCE_HOSTNAME = env.CONFLUENCE_HOSTNAME;
+const CONFLUENCE_TOKEN = env.CONFLUENCE_TOKEN;
 
 const CONFLUENCE_API_URL = `https://${CONFLUENCE_HOSTNAME}/rest/api`;
 const CONFLUENCE_DOWNLOAD_URL = `https://${CONFLUENCE_HOSTNAME}/download/attachments`;
