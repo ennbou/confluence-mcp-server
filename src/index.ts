@@ -1,7 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { fetchSpaces, fetchSpaceDetails, fetchSpacePages, fetchPageDetails, searchUsingCQL, fetchAttachments, downloadAttachment } from "./api.js";
+import { fetchSpaces, fetchSpaceDetails, fetchSpacePages, fetchPageDetails, searchUsingCQL, fetchAttachments, downloadAttachment, fetchPageChildren, downloadClient } from "./api.js";
+import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 
 const server = new McpServer({
   name: "confluencemcpserver",
@@ -11,145 +12,104 @@ const server = new McpServer({
   },
 });
 
-const getConfluenceSpacesTool = server.tool("get-confluence-spaces", "fetch confluence spaces", {}, async () => {
+const loadData = async (fetchFunction: Promise<any>, formatFetchedData?: (data: any) => string): Promise<CallToolResult> => {
   try {
-    const spaces = await fetchSpaces();
+    const data = await fetchFunction;
     return {
       content: [{
         type: "text",
-        text: JSON.stringify(spaces, null, 2),
+        text: formatFetchedData ? formatFetchedData(data) : data,
       }],
     };
   } catch (error) {
-    console.error("Error fetching spaces:", error);
+    console.error("Error fetching data:", error);
     return {
       content: [{
         type: "text",
-        text: "Error fetching spaces",
+        text: "Error fetching data",
       }],
     };
   }
-});
+}
 
-const getConfluenceSpaceDetailsTool = server.tool("get-confluence-space-details", "fetch confluence space details", { spaceKey: z.string() }, async ({ spaceKey }) => {
-  try {
-    const spaceDetails = await fetchSpaceDetails(spaceKey);
-    return {
-      content: [{
-        type: "text",
-        text: JSON.stringify(spaceDetails, null, 2),
-      }],
-    };
-  } catch (error) {
-    console.error(`Error fetching space details for ${spaceKey}:`, error);
-    return {
-      content: [{
-        type: "text",
-        text: "Error fetching space details",
-      }],
-    };
-  }
-});
+const stringufyData = (data: any) => JSON.stringify(data, null, 2)
 
-const getConfluenceSpacePagesTool = server.tool("get-confluence-space-pages", "fetch confluence space pages", { spaceKey: z.string(), expand: z.string().optional(), pagination: z.object({ start: z.number(), limit: z.number() }).optional() }, async ({ spaceKey, expand, pagination }) => {
-  try {
-    const pages = await fetchSpacePages(spaceKey, expand, pagination);
-    return {
-      content: [{
-        type: "text",
-        text: JSON.stringify(pages, null, 2),
-      }],
-    };
-  } catch (error) {
-    console.error(`Error fetching pages for space ${spaceKey}:`, error);
-    return {
-      content: [{
-        type: "text",
-        text: "Error fetching space pages",
-      }],
-    };
+const getConfluenceSpacesTool = server.tool(
+  "get-confluence-spaces",
+  "Retrieve a list of Confluence spaces. You can use the pagination parameter to control the number of results returned.",
+  { pagination: z.object({ start: z.number().optional(), limit: z.number().optional() }).optional() },
+  async ({ pagination }) => {
+    return await loadData(fetchSpaces(pagination), stringufyData);
   }
-});
+);
 
-const getConfluencePageDetailsTool = server.tool("get-confluence-page-details", "fetch confluence page details", { pageId: z.string(), expand: z.string().optional() }, async ({ pageId, expand = "space,body.storage" }) => {
-  try {
-    const pageDetails = await fetchPageDetails(pageId, expand);
-    return {
-      content: [{
-        type: "text",
-        text: JSON.stringify(pageDetails, null, 2),
-      }],
-    };
-  } catch (error) {
-    console.error(`Error fetching page details for ${pageId}:`, error);
-    return {
-      content: [{
-        type: "text",
-        text: "Error fetching page details",
-      }],
-    };
+const getConfluenceSpaceDetailsTool = server.tool(
+  "get-confluence-space-details",
+  "Retrieve detailed information about a specific Confluence space. The spaceKey can be obtained from the get-confluence-spaces tool.",
+  { spaceKey: z.string() },
+  async ({ spaceKey }) => {
+    return await loadData(fetchSpaceDetails(spaceKey), stringufyData);
   }
-});
+);
 
-const searchConfluenceUsingCQLTool = server.tool("search-confluence-using-cql", "search confluence using CQL", { cql: z.string(), expand: z.string().optional() }, async ({ cql, expand = "body.storage" }) => {
-  try {
-    const results = await searchUsingCQL(cql, expand);
-    return {
-      content: [{
-        type: "text",
-        text: JSON.stringify(results, null, 2),
-      }],
-    };
-  } catch (error) {
-    console.error(`Error searching using CQL ${cql}:`, error);
-    return {
-      content: [{
-        type: "text",
-        text: "Error searching using CQL",
-      }],
-    };
+const getConfluenceSpacePagesTool = server.tool(
+  "get-confluence-space-pages",
+  "Retrieve a list of pages within a specific Confluence space. You can expand the response with additional details such as space or body.storage. Supports pagination.",
+  {
+    spaceKey: z.string(),
+    expand: z.string().optional(),
+    pagination: z.object({ start: z.number().optional(), limit: z.number().optional() }).optional(),
+  },
+  async ({ spaceKey, expand, pagination }) => {
+    console.error("test", spaceKey, expand, pagination);
+    return await loadData(fetchSpacePages(spaceKey, expand, pagination), stringufyData);
   }
-});
+);
 
-const getConfluenceAttachmentsTool = server.tool("get-confluence-attachments", "fetch confluence attachments", { pageId: z.string() }, async ({ pageId }) => {
-  try {
-    const attachments = await fetchAttachments(pageId);
-    return {
-      content: [{
-        type: "text",
-        text: JSON.stringify(attachments, null, 2),
-      }],
-    };
-  } catch (error) {
-    console.error(`Error fetching attachments for page ${pageId}:`, error);
-    return {
-      content: [{
-        type: "text",
-        text: "Error fetching attachments",
-      }],
-    };
+const getConfluencePageDetailsTool = server.tool(
+  "get-confluence-page-details",
+  "Retrieve detailed information about a specific Confluence page. The pageId can be obtained from the get-confluence-space-pages tool. Optionally, use the expand parameter to include additional details such as body.storage .",
+  { pageId: z.string(), expand: z.string().optional() },
+  async ({ pageId, expand = "space,body.storage,children,children.page,children.page.body.storage" }) => {
+    return await loadData(fetchPageDetails(pageId, expand), stringufyData);
   }
-});
+);
 
-const downloadConfluenceAttachmentTool = server.tool("download-confluence-attachment", "download confluence attachment", { attachmentId: z.string() }, async ({ attachmentId }) => {
-  try {
-    const response = await downloadAttachment(attachmentId);
-    return {
-      content: [{
-        type: "text",
-        text: "Attachment downloaded successfully",
-      }],
-    };
-  } catch (error) {
-    console.error(`Error downloading attachment ${attachmentId}:`, error);
-    return {
-      content: [{
-        type: "text",
-        text: "Error downloading attachment",
-      }],
-    };
+const searchConfluenceUsingCQLTool = server.tool(
+  "search-confluence-using-cql",
+  "Retrieve Confluence content using CQL (Confluence Query Language). You can use the expand parameter to include additional details such as body.storage.",
+  { cql: z.string(), expand: z.string().optional() },
+  async ({ cql, expand = "body.storage" }) => {
+    return await loadData(searchUsingCQL(cql, expand), stringufyData);
   }
-});
+);
+
+const getConfluenceAttachmentsTool = server.tool(
+  "get-confluence-attachments",
+  "Retrieve all attachments associated with a specific Confluence page. The pageId parameter can be obtained using the get-confluence-space-pages tool.",
+  { pageId: z.string() },
+  async ({ pageId }) => {
+    return await loadData(fetchAttachments(pageId), stringufyData);
+  }
+);
+
+const downloadConfluenceAttachmentTool = server.tool(
+  "download-confluence-attachment",
+  "Download the binary for a specific Confluence attachment.",
+  { downloadUrl: z.string() },
+  async ({ downloadUrl }) => {
+    return await loadData(downloadAttachment(downloadUrl));
+  }
+);
+
+const getConfluencePageChildrenTool = server.tool(
+  "get-confluence-page-children",
+  "Retrieve all children of a specific Confluence page. The pageId parameter can be obtained using the get-confluence-space-pages tool.",
+  { pageId: z.string() },
+  async ({ pageId }) => {
+    return await loadData(fetchPageChildren(pageId), stringufyData);
+  }
+);
 
 async function main() {
   const transport = new StdioServerTransport();
