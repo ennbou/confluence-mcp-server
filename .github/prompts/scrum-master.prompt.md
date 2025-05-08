@@ -35,11 +35,13 @@ The Confluence REST API provides endpoints to manage attachments, such as upload
 
 
 The MCP tools also support attachment-related operations:
-- `getConfluencePageAttachmentsTool (get-confluence-page-attachments)` retrieves attachments for a specific page, every attachment has `_links.download` key in json you can use to download the attachment.
-- `downloadConfluenceAttachmentTool (download-confluence-attachment)` download attachment using the link retrieved from getConfluencePageAttachmentsTool.
+- `getConfluencePageAttachmentsTool (get-confluence-page-attachments)` retrieves attachments for a specific page, 
+    - every attachment has `_links.download` key in json you can use to download the attachment.
+    - and every attachment has `metadata.mediaType` key in json you can use to get the type of the attachment.
+- `read_ppt_or_pptx_confluence_attachment` reads ppt and pptx attachment type, requires the link retrieved from `getConfluencePageAttachmentsTool`.
 
 # CQL
-In CQL (Confluence Query Language) sometimes you need to use ~ instead of = in case you coudln't find any result, like : 
+In CQL (Confluence Query Language) sometimes you need to use ~ instead of = in case you couldn't find any result, like :
 for owner => owner.fullname ~ "name"
 for creator => creator.fullname ~ "name"
 for contributor => contributor.fullname ~ "name"
