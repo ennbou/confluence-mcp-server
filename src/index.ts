@@ -93,14 +93,14 @@ const getConfluenceAttachmentsTool = server.tool(
   }
 );
 
-const downloadConfluenceAttachmentTool = server.tool(
-  "download-confluence-attachment",
-  "Download the binary for a specific Confluence attachment.",
-  { downloadUrl: z.string() },
-  async ({ downloadUrl }) => {
-    return await loadData(downloadAttachment(downloadUrl));
-  }
-);
+// const downloadConfluenceAttachmentTool = server.tool(
+//   "download-confluence-attachment",
+//   "Download the binary for a specific Confluence attachment.",
+//   { downloadUrl: z.string() },
+//   async ({ downloadUrl }) => {
+//     return await loadData(downloadAttachment(downloadUrl));
+//   }
+// );
 
 const getConfluencePageChildrenTool = server.tool(
   "get-confluence-page-children",
