@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# check if os is macos otherwise exit 0
+if [[ "$OSTYPE" != "darwin"* ]]; then
+	exit 0
+fi
+
+#check if repo is not empty
+if git rev-parse --verify HEAD >/dev/null 2>&1
+then
+	against=HEAD
+else
+	# Initial commit: diff against an empty tree object
+	against=$(git hash-object -t tree /dev/null)
+fi
+
+# check if gitleaks is installed otherwise install it
+if ! command -v gitleaks &> /dev/null
+then
+	echo "gitleaks could not be found, installing..."
+	brew install gitleaks
+	if [ $? -ne 0 ]; then
+		echo "🔴 Failed to install gitleaks. Please install it manually."
+		exit 1
+	fi
+	echo "🟢 gitleaks installed successfully."
+fi
+
+echo "⌛ Running gitleaks to check for secrets..."
+
+if ! gitleaks git --pre-commit >/dev/null 2>&1; then
+	echo "🔴 Secrets detected by gitleaks. Commit aborted."
+	exit 1
+fi
+
+echo "🟢 No secrets detected. Proceeding with commit."

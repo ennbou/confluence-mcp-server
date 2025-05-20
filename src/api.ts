@@ -19,6 +19,7 @@ export const downloadClient = axios.create({
     headers: {
         Authorization: `Bearer ${CONFLUENCE_TOKEN}`,
     },
+    responseType: 'arraybuffer'
 });
 
 const fetchSpaces = async (pagination?: { start?: Number, limit?: Number }) => {
