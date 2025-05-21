@@ -129,6 +129,6 @@ You still need Confluence server credentials. Add them to your environment, or e
 }
 ```
 
-## Author
+## License
 
-ennbou
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
